@@ -178,10 +178,7 @@ export default function DashboardPage() {
                       {formatDateTime(tender.updatedAt)}
                     </td>
                     <td className="whitespace-nowrap py-3 pr-4">
-                      <DashboardTenderAction
-                        tender={tender}
-                        currentRole={currentUser.role}
-                      />
+                      <DashboardTenderAction tender={tender} />
                     </td>
                   </tr>
                 ))}
@@ -196,51 +193,9 @@ export default function DashboardPage() {
 
 function DashboardTenderAction({
   tender,
-  currentRole,
 }: {
   tender: ReturnType<typeof getRuntimeTender>;
-  currentRole: Role;
 }) {
-  if (currentRole === Role.VENDOR) {
-    if (hasActiveSubmissionWindow(tender)) {
-      return (
-        <Link
-          href={`/tenders/${tender.id}/submit`}
-          className="inline-flex items-center gap-1 text-sm font-semibold text-gov-blue hover:underline"
-        >
-          Submit proposal
-          <ArrowRight className="h-4 w-4" aria-hidden />
-        </Link>
-      );
-    }
-
-    return <span className="text-sm text-slate-500">Submissions closed</span>;
-  }
-
-  if (currentRole === Role.EVALUATOR && tender.state === "EVALUATION") {
-    return (
-      <Link
-        href={`/tenders/${tender.id}/evaluation`}
-        className="inline-flex items-center gap-1 text-sm font-semibold text-gov-blue hover:underline"
-      >
-        Evaluation panel
-        <ArrowRight className="h-4 w-4" aria-hidden />
-      </Link>
-    );
-  }
-
-  if (currentRole === Role.BOARD_MEMBER && tender.state === "BOARD_VOTING") {
-    return (
-      <Link
-        href={`/tenders/${tender.id}/board`}
-        className="inline-flex items-center gap-1 text-sm font-semibold text-gov-blue hover:underline"
-      >
-        Board voting
-        <ArrowRight className="h-4 w-4" aria-hidden />
-      </Link>
-    );
-  }
-
   return (
     <Link
       href={`/tenders/${tender.id}`}
@@ -274,14 +229,5 @@ function MetricCard({
         </div>
       </div>
     </article>
-  );
-}
-
-function hasActiveSubmissionWindow(tender: ReturnType<typeof getRuntimeTender>) {
-  const deadlineMs = new Date(tender.deadline).getTime();
-  return (
-    tender.state === "OPEN" &&
-    Number.isFinite(deadlineMs) &&
-    Date.now() < deadlineMs
   );
 }

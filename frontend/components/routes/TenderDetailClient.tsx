@@ -3,15 +3,11 @@
 import Link from "next/link";
 import { ArrowRight, FileText, ShieldAlert } from "lucide-react";
 import { Role } from "@shared/mockBhutanNdiRbac";
-import {
-  getTenderTimelineSteps,
-} from "@/services/demoData";
 import { useTenderWorkspace } from "@/hooks/useTenderWorkspace";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { MessageBanner } from "@/components/ui/MessageBanner";
 import { RoleGuard } from "@/components/RoleGuard";
-import { TenderTimeline } from "@/components/TenderTimeline";
 import { AuditProofCard } from "@/components/AuditProofCard";
 import { ProposalCard } from "@/components/ProposalCard";
 import { DeadlineLockNotice } from "@/components/DeadlineLockNotice";
@@ -75,6 +71,23 @@ export function TenderDetailClient({ tenderId }: { tenderId: string }) {
                 Board voting
               </Link>
             </RoleGuard>
+            {tender.state === "BOARD_VOTING" || tender.state === "AWARDED" ? (
+              <RoleGuard
+                allowedRoles={[
+                  Role.PROCUREMENT_OFFICER,
+                  Role.BOARD_MEMBER,
+                  Role.AUDITOR,
+                ]}
+                mode="hide"
+              >
+                <Link
+                  href={`/tenders/${tender.id}/award`}
+                  className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Award section
+                </Link>
+              </RoleGuard>
+            ) : null}
             <Link
               href={`/audit/${tender.id}`}
               className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
@@ -85,7 +98,7 @@ export function TenderDetailClient({ tenderId }: { tenderId: string }) {
         }
       />
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_420px]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-panel">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
@@ -129,25 +142,31 @@ export function TenderDetailClient({ tenderId }: { tenderId: string }) {
           </div>
         </section>
 
-        <div className="grid gap-4">
+        <aside className="grid content-start gap-4">
           <DeadlineLockNotice tender={tender} />
-          <TenderOfficerDeadlineActions tender={tender} />
-          <ForwardToBoardVotingAction tender={tender} proposals={proposals} />
-          <MessageBanner
-            tone="success"
-            title="Success state ready"
-            message="Valid lifecycle actions record hashes, timestamps, role, state change, and secure proof."
-          />
-          <MessageBanner
-            tone="warning"
-            title="Proposal content is protected"
-            message="Decrypted proposals are available only to assigned evaluators during EVALUATION."
-          />
           <AuditProofCard proof={primaryProof} />
-        </div>
+        </aside>
       </div>
 
-      <TenderTimeline steps={getTenderTimelineSteps(tender)} />
+      <RoleGuard allowedRoles={[Role.PROCUREMENT_OFFICER]} mode="hide">
+        <section className="grid gap-4 xl:grid-cols-2">
+          <TenderOfficerDeadlineActions tender={tender} />
+          <ForwardToBoardVotingAction tender={tender} proposals={proposals} />
+        </section>
+      </RoleGuard>
+
+      <section className="grid gap-4 lg:grid-cols-2">
+        <MessageBanner
+          tone="success"
+          title="Success state ready"
+          message="Valid lifecycle actions record hashes, timestamps, role, state change, and secure proof."
+        />
+        <MessageBanner
+          tone="warning"
+          title="Proposal content is protected"
+          message="Decrypted proposals are available only to assigned evaluators during EVALUATION."
+        />
+      </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
         {proposals.length > 0 ? (

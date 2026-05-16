@@ -1,14 +1,12 @@
 "use client";
 
 import { Permission, Role } from "@shared/mockBhutanNdiRbac";
-import { getTenderTimelineSteps } from "@/services/demoData";
 import { useTenderWorkspace } from "@/hooks/useTenderWorkspace";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { MessageBanner } from "@/components/ui/MessageBanner";
 import { RoleGuard } from "@/components/RoleGuard";
 import { TenderStateGuard } from "@/components/TenderStateGuard";
 import { ProposalCard } from "@/components/ProposalCard";
-import { TenderTimeline } from "@/components/TenderTimeline";
 import { DeadlineLockNotice } from "@/components/DeadlineLockNotice";
 import { EvaluationDecryptionPanel } from "@/components/EvaluationDecryptionPanel";
 import { EvaluationTeamWorkflowPanel } from "@/components/EvaluationTeamWorkflowPanel";
@@ -96,7 +94,6 @@ export function TenderEvaluationClient({ tenderId }: { tenderId: string }) {
 
           <EvaluationTeamWorkflowPanel tender={tender} proposals={proposals} />
 
-          <TenderTimeline steps={getTenderTimelineSteps(tender)} />
         </TenderStateGuard>
       </RoleGuard>
 

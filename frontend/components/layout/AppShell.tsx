@@ -27,7 +27,8 @@ import {
   subscribeRuntimeTenderChanges,
 } from "@/services/demoTenderRuntime";
 import { subscribeRuntimeProcurementData } from "@/services/runtimeProcurementData";
-import type { Tender } from "@/services/demoData";
+import { getTenderTimelineSteps, type Tender } from "@/services/demoData";
+import { TenderTimeline } from "@/components/TenderTimeline";
 
 const navItems: Array<{
   href: string;
@@ -124,6 +125,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const currentNavItems = navItems.map((item) =>
     rewriteWorkflowNavItem(item, createdWorkflowTenders),
   );
+  const activeTenderId = getTenderIdFromPathname(pathname);
+  const activeTender = activeTenderId
+    ? createdWorkflowTenders.find((tender) => tender.id === activeTenderId)
+    : null;
   const visibleNavItems = currentNavItems.filter((item) => {
     if (!currentUser) return item.href === "/audit";
     if (currentUser.role === Role.AUDITOR) {
@@ -179,7 +184,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             const Icon = item.icon;
             return (
               <Link
-                key={item.href}
+                key={item.label}
                 href={item.href}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium ${
                   active
@@ -270,10 +275,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </header>
 
         <DemoProofLabels />
+        {activeTender ? (
+          <TenderTimeline
+            steps={getTenderTimelineSteps(activeTender)}
+            variant="strip"
+          />
+        ) : null}
         <main className="px-4 py-6 md:px-6 lg:px-8">{children}</main>
       </div>
     </div>
   );
+}
+
+function getTenderIdFromPathname(pathname: string): string | null {
+  const match = pathname.match(/^\/tenders\/([^/]+)/);
+  return match?.[1] ? decodeURIComponent(match[1]) : null;
 }
 
 function rewriteWorkflowNavItem(
@@ -281,66 +297,46 @@ function rewriteWorkflowNavItem(
   tenders: Tender[],
 ): (typeof navItems)[number] {
   if (tenders.length === 0) return item;
-  const latestTender = tenders[0];
 
   if (item.label === "Manage Tender") {
     return {
       ...item,
-      href: `/tenders/${latestTender.id}`,
+      href: "/tenders",
       visible: () => true,
     };
   }
 
   if (item.label === "Submit Proposal") {
-    const submissionTender = tenders.find(hasActiveSubmissionWindow);
     return {
       ...item,
-      href: submissionTender
-        ? `/tenders/${submissionTender.id}/submit`
-        : "/dashboard",
-      visible: () => !!submissionTender,
+      href: "/tenders",
+      visible: () => true,
     };
   }
 
   if (item.label === "Evaluation Panel") {
-    const evaluationTender = tenders.find((tender) => tender.state === "EVALUATION");
     return {
       ...item,
-      href: evaluationTender
-        ? `/tenders/${evaluationTender.id}/evaluation`
-        : "/dashboard",
-      visible: () => !!evaluationTender,
+      href: "/tenders",
+      visible: () => true,
     };
   }
 
   if (item.label === "Board Voting") {
-    const boardTender = tenders.find((tender) => tender.state === "BOARD_VOTING");
     return {
       ...item,
-      href: boardTender ? `/tenders/${boardTender.id}/board` : "/dashboard",
-      visible: () => !!boardTender,
+      href: "/tenders",
+      visible: () => true,
     };
   }
 
   if (item.label === "Award Section") {
-    const awardTender = tenders.find(
-      (tender) => tender.state === "BOARD_VOTING" || tender.state === "AWARDED",
-    );
     return {
       ...item,
-      href: awardTender ? `/tenders/${awardTender.id}/award` : "/dashboard",
-      visible: () => !!awardTender,
+      href: "/tenders",
+      visible: () => true,
     };
   }
 
   return item;
-}
-
-function hasActiveSubmissionWindow(tender: Tender): boolean {
-  const deadlineMs = new Date(tender.deadline).getTime();
-  return (
-    tender.state === "OPEN" &&
-    Number.isFinite(deadlineMs) &&
-    Date.now() < deadlineMs
-  );
 }
