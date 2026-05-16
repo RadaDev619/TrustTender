@@ -1,0 +1,32 @@
+export {
+  EmploymentCredentialSchemaId,
+  MockNdiMode,
+  MockNdiRequestedAttributes,
+  MockNdiUsers,
+  Page,
+  Permission,
+  Role,
+  RolePermissions,
+  canAccessPage,
+  createMockNdiSession,
+  getAuditIdentity,
+  getMockNdiUserByEmploymentId,
+  getMockNdiUserById,
+  getMockNdiUserByIdentityHash,
+  getPermissionsForRole,
+  hasPermission,
+  isAuditor,
+  isBoardMember,
+  isEvaluator,
+  isProcurementOfficer,
+  isVendor,
+  mapEmploymentIdToRole,
+} from "../../shared/src/mockBhutanNdiRbac";
+
+export type {
+  MockNdiSession,
+  MockNdiUser,
+  Permission as PermissionType,
+  Role as RoleType,
+  RoleSubject,
+} from "../../shared/src/mockBhutanNdiRbac";

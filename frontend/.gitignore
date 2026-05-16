@@ -1,0 +1,6 @@
+.next/
+node_modules/
+tsconfig.tsbuildinfo
+.next-*.log
+test-results/
+.screenshots/

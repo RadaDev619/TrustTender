@@ -1,0 +1,4 @@
+.env
+data/audit-transactions.json
+data/procurement-db.json
+node_modules/
