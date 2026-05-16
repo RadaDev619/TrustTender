@@ -174,6 +174,7 @@ export function TenderDetailClient({ tenderId }: { tenderId: string }) {
             <ProposalCard
               key={proposal.id}
               proposal={proposal}
+              proposals={proposals}
               canOpen={proposalContentOpen}
               accessLabel={proposalAccessLabel}
             />

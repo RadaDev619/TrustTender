@@ -9,6 +9,10 @@ import {
 } from "@shared/mockBhutanNdiRbac";
 import type { Proposal, Tender } from "@/services/demoData";
 import {
+  getAnonymousProposalLabel,
+  getProposalAlias,
+} from "@/services/proposalAnonymity";
+import {
   type EvaluationProposalScore,
   type EvaluationRankingLine,
   type EvaluationScoreSection,
@@ -407,7 +411,7 @@ export function EvaluationTeamWorkflowPanel({
               className="grid gap-2 rounded-md border border-slate-200 bg-slate-50 p-3 text-sm font-medium text-slate-700"
             >
               <span>
-                {proposal.id} - {proposal.vendorName}
+                {getAnonymousProposalLabel(proposal, proposals)}
               </span>
               <div className="flex items-center gap-3">
                 <input
@@ -521,7 +525,7 @@ function buildProposalScores(
   return proposals
     .map((proposal) => ({
       proposalId: proposal.id,
-      vendorName: proposal.vendorName,
+      vendorName: getProposalAlias(proposal, proposals),
       score: Number(scoreInputs[proposal.id]),
     }))
     .filter((score) => Number.isFinite(score.score));

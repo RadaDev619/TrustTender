@@ -1,7 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, ShieldCheck } from "lucide-react";
+import {
+  ArrowLeft,
+  EyeOff,
+  FileCheck2,
+  Fingerprint,
+  Hash,
+  LockKeyhole,
+  ShieldCheck,
+  Vote,
+  type LucideIcon,
+} from "lucide-react";
 import { useTenderWorkspace } from "@/hooks/useTenderWorkspace";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -12,6 +22,11 @@ import { BoardVoteAuditLogPanel } from "@/components/BoardVoteAuditLogPanel";
 import { AwardAuditLogPanel } from "@/components/AwardAuditLogPanel";
 import { TenderRuntimeAuditEvents } from "@/components/TenderRuntimeAuditEvents";
 import { formatDateTime, shortHash } from "@/lib/format";
+import { getRuntimeAuditEvents } from "@/services/demoTenderRuntime";
+import { listStoredProposalManifests } from "@/services/proposalCrypto";
+import { listEvaluationAuditRecords } from "@/services/evaluationSignatureDb";
+import { listBoardVoteAuditRecords } from "@/services/boardVoteDb";
+import { listAwardAuditRecords } from "@/services/awardDecisionDb";
 
 export function TenderAuditClient({ tenderId }: { tenderId: string }) {
   const workspace = useTenderWorkspace(tenderId);
@@ -53,6 +68,18 @@ export function TenderAuditClient({ tenderId }: { tenderId: string }) {
   }
 
   const { tender, proposals, primaryProof } = workspace;
+  const proposalManifests = listStoredProposalManifests(tender.id);
+  const manifestByProposalId = new Map(
+    proposalManifests.map((manifest) => [manifest.proposalId, manifest]),
+  );
+  const stageEvents = getRuntimeAuditEvents(tender.id);
+  const evaluationRecords = listEvaluationAuditRecords(tender.id);
+  const voteRecords = listBoardVoteAuditRecords(tender.id);
+  const awardRecords = listAwardAuditRecords(tender.id);
+  const sectionProofCount = proposalManifests.reduce(
+    (sum, manifest) => sum + Object.keys(manifest.sections).length,
+    0,
+  );
 
   return (
     <div className="grid gap-6">
@@ -71,17 +98,79 @@ export function TenderAuditClient({ tenderId }: { tenderId: string }) {
         }
       />
 
-      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-panel">
-        <div className="flex flex-wrap items-start justify-between gap-4">
+      <section className="overflow-hidden rounded-lg border border-emerald-200 bg-white shadow-panel">
+        <div className="grid gap-5 p-5 lg:grid-cols-[1.1fr_0.9fr]">
           <div>
-            <h2 className="text-base font-semibold text-gov-ink">
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusBadge status="Public hashes only" />
+              <StatusBadge status="Content redacted" />
+              <StatusBadge status="Read-only audit" />
+            </div>
+            <h2 className="mt-4 text-xl font-semibold text-gov-ink">
               {tender.title}
             </h2>
             <p className="mt-1 text-sm text-slate-600">{tender.agency}</p>
+            <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+              <AuditFact label="Tender status" value={tender.state} />
+              <AuditFact label="Deadline" value={formatDateTime(tender.deadline)} />
+              <AuditFact label="Tender hash" value={shortHash(tender.documentHash)} mono />
+              <AuditFact label="Last updated" value={formatDateTime(tender.updatedAt)} />
+            </dl>
           </div>
-          <StatusBadge status={tender.state} />
+          <div className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <PublicSecurityControl
+              icon={EyeOff}
+              title="No proposal content"
+              detail="Only manifest and encrypted section hashes appear here."
+            />
+            <PublicSecurityControl
+              icon={Fingerprint}
+              title="Identity privacy"
+              detail="Vendors, evaluators, and board members are represented by hashes."
+            />
+            <PublicSecurityControl
+              icon={LockKeyhole}
+              title="Secrets removed"
+              detail="Encrypted storage locations, IVs, and KMS key references are never displayed."
+            />
+          </div>
         </div>
       </section>
+
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+        <AuditEvidenceMetric
+          icon={FileCheck2}
+          label="Proposal manifests"
+          value={proposalManifests.length}
+          note={`${sectionProofCount} section hashes`}
+        />
+        <AuditEvidenceMetric
+          icon={ShieldCheck}
+          label="Stage changes"
+          value={stageEvents.length}
+          note="Lifecycle proof events"
+        />
+        <AuditEvidenceMetric
+          icon={Fingerprint}
+          label="Evaluator signatures"
+          value={evaluationRecords.length}
+          note="Signed score bundles"
+        />
+        <AuditEvidenceMetric
+          icon={Vote}
+          label="Board votes"
+          value={voteRecords.length}
+          note="Vote hashes only"
+        />
+        <AuditEvidenceMetric
+          icon={Hash}
+          label="Award proofs"
+          value={awardRecords.length}
+          note="Decision hash records"
+        />
+      </section>
+
+      <AuditProofCard proof={primaryProof} />
 
       <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-panel">
         <div className="mb-5 flex items-center gap-2">
@@ -103,17 +192,48 @@ export function TenderAuditClient({ tenderId }: { tenderId: string }) {
                       {proposal.id}
                     </h3>
                     <p className="mt-1 text-sm text-slate-600">
-                      Vendor {proposal.vendorName}
+                      Vendor identity{" "}
+                      {proposal.vendorHash
+                        ? shortHash(proposal.vendorHash)
+                        : "redacted"}
                     </p>
                   </div>
-                  <StatusBadge status="Encrypted" />
+                  <div className="flex flex-wrap gap-2">
+                    <StatusBadge status="Encrypted" />
+                    <StatusBadge status="Content redacted" />
+                  </div>
                 </div>
-                <p className="mt-3 font-mono text-xs text-slate-700">
-                  Manifest {shortHash(proposal.fileHash)}
-                </p>
-                <p className="mt-1 text-xs text-slate-600">
-                  Submitted {formatDateTime(proposal.submittedAt)}
-                </p>
+                <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+                  <AuditFact
+                    label="Manifest hash"
+                    value={shortHash(proposal.fileHash)}
+                    mono
+                  />
+                  <AuditFact
+                    label="Submitted"
+                    value={formatDateTime(proposal.submittedAt)}
+                  />
+                </dl>
+                <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                  {Object.values(
+                    manifestByProposalId.get(proposal.id)?.sections ?? {},
+                  ).map((section) => (
+                    <div
+                      key={section.section}
+                      className="rounded-md border border-slate-200 bg-white p-3"
+                    >
+                      <p className="text-xs font-semibold uppercase text-slate-500">
+                        {formatSectionLabel(section.section)} section
+                      </p>
+                      <p className="mt-1 font-mono text-xs text-slate-700">
+                        Hash {shortHash(section.encryptedHash)}
+                      </p>
+                      <p className="mt-1 font-mono text-xs text-slate-500">
+                        Envelope {shortHash(section.envelopeHash)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
               </article>
             ))}
           </div>
@@ -135,12 +255,87 @@ export function TenderAuditClient({ tenderId }: { tenderId: string }) {
         </p>
       </section>
 
-      <AuditProofCard proof={primaryProof} />
       <EvaluationAuditLogPanel tenderId={tender.id} />
       <BoardVoteAuditLogPanel tenderId={tender.id} />
       <AwardAuditLogPanel tenderId={tender.id} />
     </div>
   );
+}
+
+function AuditEvidenceMetric({
+  icon: Icon,
+  label,
+  value,
+  note,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: number;
+  note: string;
+}) {
+  return (
+    <article className="rounded-lg border border-slate-200 bg-white p-4 shadow-panel">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase text-slate-500">
+            {label}
+          </p>
+          <p className="mt-2 text-2xl font-semibold text-gov-ink">{value}</p>
+          <p className="mt-1 text-xs text-slate-500">{note}</p>
+        </div>
+        <div className="grid h-10 w-10 place-items-center rounded-md bg-emerald-50 text-emerald-700">
+          <Icon className="h-5 w-5" aria-hidden />
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function PublicSecurityControl({
+  icon: Icon,
+  title,
+  detail,
+}: {
+  icon: LucideIcon;
+  title: string;
+  detail: string;
+}) {
+  return (
+    <div className="flex gap-3 rounded-md bg-white p-3">
+      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" aria-hidden />
+      <div>
+        <p className="text-sm font-semibold text-slate-900">{title}</p>
+        <p className="mt-1 text-xs leading-5 text-slate-500">{detail}</p>
+      </div>
+    </div>
+  );
+}
+
+function AuditFact({
+  label,
+  value,
+  mono = false,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+}) {
+  return (
+    <div>
+      <dt className="text-slate-500">{label}</dt>
+      <dd
+        className={`mt-1 break-words font-medium text-slate-900 ${
+          mono ? "font-mono text-xs" : ""
+        }`}
+      >
+        {value}
+      </dd>
+    </div>
+  );
+}
+
+function formatSectionLabel(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
 function TenderAuditLoading({

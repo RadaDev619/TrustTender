@@ -1,19 +1,30 @@
 import { FileText, LockKeyhole, ShieldCheck } from "lucide-react";
 import type { Proposal } from "@/services/demoData";
+import { getProposalDisplayName } from "@/services/proposalAnonymity";
 import { formatDateTime, shortHash } from "@/lib/format";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 
 interface ProposalCardProps {
   proposal: Proposal;
+  proposals?: Proposal[];
   canOpen?: boolean;
   accessLabel?: string;
+  revealVendorName?: boolean;
 }
 
 export function ProposalCard({
   proposal,
+  proposals = [proposal],
   canOpen = false,
   accessLabel,
+  revealVendorName = false,
 }: ProposalCardProps) {
+  const proposalDisplayName = getProposalDisplayName({
+    proposal,
+    proposals,
+    revealVendorName,
+  });
+
   return (
     <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-panel">
       <div className="flex items-start gap-3">
@@ -26,7 +37,7 @@ export function ProposalCard({
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className="font-semibold text-gov-ink">{proposal.vendorName}</h3>
+            <h3 className="font-semibold text-gov-ink">{proposalDisplayName}</h3>
             <StatusBadge status={proposal.status} />
           </div>
           <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">

@@ -121,12 +121,7 @@ export function EncryptedProposalSubmissionForm({
     setProofStatus("Pending");
     setSubmitState("idle");
     setSectionStatus(createSectionRecord(() => "Pending"));
-    setSectionText(
-      createSampleProposalContent(
-        tender,
-        currentUser.company ?? currentUser.name,
-      ),
-    );
+    setSectionText(createSampleProposalContent(tender));
     setSampleLoadedForUserId(currentUser.id);
   }, [
     currentUser,
@@ -220,12 +215,7 @@ export function EncryptedProposalSubmissionForm({
     setProofStatus("Pending");
     setSubmitState("idle");
     setSectionStatus(createSectionRecord(() => "Pending"));
-    setSectionText(
-      createSampleProposalContent(
-        tender,
-        currentUser?.company ?? currentUser?.name ?? "Vendor",
-      ),
-    );
+    setSectionText(createSampleProposalContent(tender));
     setSampleLoadedForUserId(currentUser?.id ?? null);
   }
 
@@ -484,7 +474,11 @@ export function EncryptedProposalSubmissionForm({
         ) : null}
 
         {existingProposals.slice(0, 1).map((proposal) => (
-          <ProposalCard key={proposal.id} proposal={proposal} />
+          <ProposalCard
+            key={proposal.id}
+            proposal={proposal}
+            proposals={existingProposals}
+          />
         ))}
       </aside>
     </div>
@@ -525,10 +519,9 @@ function createSectionRecord<T>(
 
 function createSampleProposalContent(
   tender: Tender,
-  vendorName: string,
 ): Record<ProposalSectionName, string> {
   return {
-    eligibility: `${vendorName}\nTender: ${tender.title}\nCompany registration, tax clearance, and procurement eligibility confirmed for demo submission.`,
+    eligibility: `Tender: ${tender.title}\nBidder eligibility documents, tax clearance, and procurement eligibility confirmed for demo submission. Vendor identity is intentionally omitted until award declaration.`,
     technical:
       "Method statement, delivery schedule, site supervision plan, safety approach, and quality assurance plan for the proposed works.",
     financial:

@@ -19,7 +19,7 @@ import {
 import { Role } from "@shared/mockBhutanNdiRbac";
 import { useMockNdiSession } from "@/hooks/useMockNdiSession";
 import { RoleBadge } from "@/components/ui/RoleBadge";
-import { formatRole, shortHash } from "@/lib/format";
+import { shortHash } from "@/lib/format";
 import { DemoProofLabels } from "@/components/demo/DemoProofLabels";
 import { listCreatedTenderRecords } from "@/services/createdTenderDb";
 import {
@@ -29,6 +29,7 @@ import {
 import { subscribeRuntimeProcurementData } from "@/services/runtimeProcurementData";
 import { getTenderTimelineSteps, type Tender } from "@/services/demoData";
 import { TenderTimeline } from "@/components/TenderTimeline";
+import { BhutanNdiLoginButton } from "@/components/BhutanNdiLoginButton";
 
 const navItems: Array<{
   href: string;
@@ -101,11 +102,25 @@ const navItems: Array<{
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [activeWorkflow, setActiveWorkflow] = useState<string | null>(null);
   const [createdWorkflowTenders, setCreatedWorkflowTenders] = useState<Tender[]>(
     [],
   );
-  const { currentUser, users, login, logout } = useMockNdiSession();
+  const { currentUser } = useMockNdiSession();
   const isLogin = pathname === "/login";
+
+  useEffect(() => {
+    const syncWorkflowFromLocation = () => {
+      setActiveWorkflow(getWorkflowFromCurrentLocation());
+    };
+
+    syncWorkflowFromLocation();
+    window.addEventListener("popstate", syncWorkflowFromLocation);
+
+    return () => {
+      window.removeEventListener("popstate", syncWorkflowFromLocation);
+    };
+  }, [pathname]);
 
   useEffect(() => {
     const refresh = () => {
@@ -178,9 +193,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         <nav className="grid gap-1 p-3" aria-label="Main navigation">
           {visibleNavItems.map((item) => {
-            const active =
-              pathname === item.href ||
-              (item.href !== "/" && pathname.startsWith(`${item.href}/`));
+            const active = isNavItemActive(
+              item,
+              pathname,
+              activeWorkflow,
+            );
             const Icon = item.icon;
             return (
               <Link
@@ -191,7 +208,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     ? "bg-gov-green text-white"
                     : "text-slate-700 hover:bg-slate-100"
                 }`}
-                onClick={() => setSidebarOpen(false)}
+                onClick={() => {
+                  setActiveWorkflow(getWorkflowFromHref(item.href));
+                  setSidebarOpen(false);
+                }}
               >
                 <Icon className="h-4 w-4" aria-hidden />
                 {item.label}
@@ -203,8 +223,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <div className="lg:pl-72">
         <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
-          <div className="flex min-h-16 items-center justify-between gap-3 px-4 py-3 md:px-6">
-            <div className="flex items-center gap-3">
+          <div className="flex min-h-16 flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-6">
+            <div className="flex min-w-0 items-center gap-3">
               <button
                 type="button"
                 onClick={() => setSidebarOpen(true)}
@@ -223,9 +243,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex min-w-0 flex-wrap items-center justify-end gap-2 sm:gap-3">
               {currentUser ? (
-                <div className="hidden text-right md:block">
+                <div className="hidden text-right lg:block">
                   <p className="text-sm font-semibold text-gov-ink">
                     {currentUser.name}
                   </p>
@@ -237,39 +257,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
               {currentUser ? <RoleBadge role={currentUser.role} /> : null}
 
-              <div className="grid gap-1">
-                <label
-                  className="hidden text-[11px] font-semibold uppercase text-slate-500 md:block"
-                  htmlFor="topbar-user-switcher"
-                >
-                  Demo user switcher
-                </label>
-                <select
-                  id="topbar-user-switcher"
-                  value={currentUser?.id ?? ""}
-                  onChange={(event) => {
-                    if (event.target.value) login(event.target.value);
-                  }}
-                  className="max-w-52 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
-                >
-                  <option value="">Select user</option>
-                  {users.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name} - {formatRole(user.role)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {currentUser ? (
-                <button
-                  type="button"
-                  onClick={logout}
-                  className="hidden rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 md:inline-flex"
-                >
-                  Sign out
-                </button>
-              ) : null}
+              <BhutanNdiLoginButton compact />
             </div>
           </div>
         </header>
@@ -292,6 +280,17 @@ function getTenderIdFromPathname(pathname: string): string | null {
   return match?.[1] ? decodeURIComponent(match[1]) : null;
 }
 
+function getWorkflowFromCurrentLocation(): string | null {
+  if (typeof window === "undefined") return null;
+  return new URLSearchParams(window.location.search).get("workflow");
+}
+
+function getWorkflowFromHref(href: string): string | null {
+  const [, queryString] = href.split("?");
+  if (!queryString) return null;
+  return new URLSearchParams(queryString).get("workflow");
+}
+
 function rewriteWorkflowNavItem(
   item: (typeof navItems)[number],
   tenders: Tender[],
@@ -301,7 +300,7 @@ function rewriteWorkflowNavItem(
   if (item.label === "Manage Tender") {
     return {
       ...item,
-      href: "/tenders",
+      href: "/tenders?workflow=manage",
       visible: () => true,
     };
   }
@@ -333,10 +332,69 @@ function rewriteWorkflowNavItem(
   if (item.label === "Award Section") {
     return {
       ...item,
-      href: "/tenders",
+      href: "/tenders?workflow=award",
       visible: () => true,
     };
   }
 
   return item;
+}
+
+function isNavItemActive(
+  item: (typeof navItems)[number],
+  pathname: string,
+  workflow: string | null,
+): boolean {
+  const path = pathname.length > 1 && pathname.endsWith("/")
+    ? pathname.slice(0, -1)
+    : pathname;
+  const itemPath = item.href.split("?")[0];
+
+  if (item.label === "Dashboard") {
+    return path === "/dashboard";
+  }
+
+  if (item.label === "Create Tender") {
+    return path === "/tenders/new" || path === "/tenders/create";
+  }
+
+  if (item.label === "Manage Tender") {
+    return (
+      (path === "/tenders" && workflow !== "award") ||
+      isTenderDetailPath(path)
+    );
+  }
+
+  if (item.label === "Submit Proposal") {
+    return path === "/tenders" || /^\/tenders\/[^/]+\/submit$/.test(path);
+  }
+
+  if (item.label === "Evaluation Panel") {
+    return path === "/tenders" || /^\/tenders\/[^/]+\/evaluation$/.test(path);
+  }
+
+  if (item.label === "Board Voting") {
+    return path === "/tenders" || /^\/tenders\/[^/]+\/board$/.test(path);
+  }
+
+  if (item.label === "Award Section") {
+    return (
+      (path === "/tenders" && workflow === "award") ||
+      /^\/tenders\/[^/]+\/award$/.test(path)
+    );
+  }
+
+  if (item.label === "Public Audit") {
+    return path === "/audit" || path.startsWith("/audit/");
+  }
+
+  return path === itemPath || (itemPath !== "/" && path.startsWith(`${itemPath}/`));
+}
+
+function isTenderDetailPath(path: string): boolean {
+  if (path === "/tenders/new" || path === "/tenders/create") {
+    return false;
+  }
+
+  return /^\/tenders\/[^/]+$/.test(path);
 }

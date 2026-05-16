@@ -10,6 +10,10 @@ import type {
   Tender,
 } from "@/services/demoData";
 import {
+  getAnonymousProposalLabel,
+  getAwardDisplayName,
+} from "@/services/proposalAnonymity";
+import {
   getBoardVoteProgress,
   getCombinedBoardVotes,
   listBoardVoteRecords,
@@ -129,6 +133,7 @@ export function AwardDeclarationPanel({
     : progress.winnerProposalId
       ? proposals.find((proposal) => proposal.id === progress.winnerProposalId)
       : null;
+  const awardDeclared = !!awardRecord;
   const winningVoteCount =
     awardRecord?.winningVoteCount ??
     progress.counts.find((item) => item.proposal.id === winningProposal?.id)
@@ -229,11 +234,23 @@ export function AwardDeclarationPanel({
                   {tender.id}
                 </p>
                 <h2 className="mt-1 text-xl font-semibold text-gov-ink">
-                  {winningProposal?.vendorName ?? "Winner pending"}
+                  {winningProposal
+                    ? getAwardDisplayName({
+                        proposal: winningProposal,
+                        proposals,
+                        winningProposalId: winningProposal.id,
+                        awardDeclared,
+                      })
+                    : "Winner pending"}
                 </h2>
                 <p className="mt-1 text-sm text-slate-600">
                   {winningProposal
-                    ? `${winningProposal.id} has the majority board vote.`
+                    ? awardDeclared
+                      ? `${winningProposal.id} has been declared by majority vote.`
+                      : `${getAnonymousProposalLabel(
+                          winningProposal,
+                          proposals,
+                        )} has the majority board vote. Vendor identity remains sealed until declaration.`
                     : "Board voting must finish before an award can be declared."}
                 </p>
               </div>
@@ -371,7 +388,7 @@ export function AwardDeclarationPanel({
                 <tr>
                   <th className="py-2 pr-4 font-semibold">Rank</th>
                   <th className="py-2 pr-4 font-semibold">Proposal</th>
-                  <th className="py-2 pr-4 font-semibold">Vendor</th>
+                  <th className="py-2 pr-4 font-semibold">Proposal alias</th>
                   <th className="py-2 pr-4 font-semibold">Eligibility</th>
                   <th className="py-2 pr-4 font-semibold">Technical</th>
                   <th className="py-2 pr-4 font-semibold">Financial</th>
@@ -389,7 +406,17 @@ export function AwardDeclarationPanel({
                       {line.proposalId}
                     </td>
                     <td className="py-2 pr-4 text-slate-700">
-                      {line.vendorName}
+                      {winningProposal
+                        ? getAwardDisplayName({
+                            proposal:
+                              proposals.find(
+                                (proposal) => proposal.id === line.proposalId,
+                              ) ?? winningProposal,
+                            proposals,
+                            winningProposalId: awardRecord?.winningProposalId,
+                            awardDeclared,
+                          })
+                        : line.vendorName}
                     </td>
                     <td className="py-2 pr-4 text-slate-700">
                       {formatSectionScore(line, "ELIGIBILITY")}
@@ -460,6 +487,7 @@ export function AwardDeclarationPanel({
         totalEligibleVotes={progress.requiredVotes}
         winnerProposalId={awardRecord?.winningProposalId ?? progress.winnerProposalId}
         tie={progress.tie}
+        revealWinnerVendor={awardDeclared}
       />
     </div>
   );

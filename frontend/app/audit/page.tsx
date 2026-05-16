@@ -6,8 +6,8 @@ export default function PublicAuditPortalPage() {
     <div className="grid gap-6">
       <PageHeader
         eyebrow="Public Audit Portal"
-        title="Procurement audit trail"
-        description="Public audit shows live workflow hashes, timestamps, lifecycle stages, signatures, votes, and award proof. Confidential proposal content is not displayed."
+        title="Public verification layer"
+        description="Verify tender stages, proposal manifest hashes, evaluator signatures, board votes, and award proof without exposing confidential proposal files."
       />
 
       <RuntimeAuditIndexPanel />

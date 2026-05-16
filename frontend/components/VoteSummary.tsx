@@ -1,6 +1,7 @@
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import type { BoardVote, Proposal } from "@/services/demoData";
 import type { BoardVoteRecord } from "@/services/boardVoteDb";
+import { getAwardDisplayName } from "@/services/proposalAnonymity";
 import { shortHash } from "@/lib/format";
 
 interface VoteSummaryProps {
@@ -9,6 +10,7 @@ interface VoteSummaryProps {
   totalEligibleVotes?: number;
   winnerProposalId?: string | null;
   tie?: boolean;
+  revealWinnerVendor?: boolean;
 }
 
 export function VoteSummary({
@@ -17,6 +19,7 @@ export function VoteSummary({
   totalEligibleVotes = 3,
   winnerProposalId,
   tie = false,
+  revealWinnerVendor = false,
 }: VoteSummaryProps) {
   const totals = proposals.map((proposal) => ({
     proposal,
@@ -60,7 +63,12 @@ export function VoteSummary({
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <p className="font-semibold text-gov-ink">
-                  {proposal.vendorName}
+                  {getAwardDisplayName({
+                    proposal,
+                    proposals,
+                    winningProposalId: winnerProposalId,
+                    awardDeclared: revealWinnerVendor,
+                  })}
                 </p>
                 <p className="text-sm text-slate-600">{proposal.id}</p>
               </div>

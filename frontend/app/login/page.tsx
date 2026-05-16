@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
-import { MockNdiLoginSwitcher } from "@/components/MockNdiLoginSwitcher";
+import { BhutanNdiLoginButton } from "@/components/BhutanNdiLoginButton";
 
 export default function LoginPage() {
   return (
@@ -39,7 +39,7 @@ export default function LoginPage() {
           </Link>
         </section>
 
-        <MockNdiLoginSwitcher />
+        <BhutanNdiLoginButton />
       </div>
     </main>
   );

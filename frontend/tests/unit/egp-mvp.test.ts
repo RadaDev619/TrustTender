@@ -392,10 +392,16 @@ test("public audit trail does not expose confidential proposal content", async (
 
   const auditResponse = procurementApi.handlePublicAuditTrailRequest(tenderId);
   assert.equal(auditResponse.status, 200);
+  assert.equal(
+    (auditResponse.body.security as { proposalContentReturned?: boolean })
+      .proposalContentReturned,
+    false,
+  );
 
   const serialized = JSON.stringify(auditResponse.body);
   assert.match(serialized, /proposalManifestHash/);
   assert.match(serialized, /encryptedHash/);
+  assert.doesNotMatch(serialized, /"recommendation"\s*:/);
 
   for (const blockedField of [
     "plaintext",

@@ -154,70 +154,112 @@ export function handlePublicAuditTrailRequest(
         .filter((proposal) => proposal.tenderId === tender.id)
         .map((proposal) => proposal.id),
     );
+    const publicBody = {
+      ok: true,
+      security: {
+        responseMode: "PUBLIC_HASHES_ONLY",
+        proposalContentReturned: false,
+        encryptedEnvelopeSecretsReturned: false,
+        actorIdentityMode: "identityHash",
+        confidentialDataPolicy:
+          "Proposal files, decrypted content, envelope locations, IVs, and KMS key references are excluded from this public response.",
+        redactedFieldNames: [
+          "plaintext",
+          "plainText",
+          "proposalContent",
+          "decryptedContent",
+          "rawContent",
+          "fileContent",
+          "encryptedBlobRef",
+          "keyRef",
+          "iv",
+        ],
+      },
+      tender: {
+        id: tender.id,
+        title: tender.title,
+        deadline: tender.deadline,
+        status: tender.status,
+        tenderHash: tender.tenderHash,
+        ethereumTxHash: tender.ethereumTxHash,
+        createdAt: tender.createdAt,
+        updatedAt: tender.updatedAt,
+      },
+      proposals: db.proposals
+        .filter((proposal) => proposal.tenderId === tender.id)
+        .map((proposal) => ({
+          id: proposal.id,
+          tenderId: proposal.tenderId,
+          vendorHash: proposal.vendorHash,
+          proposalManifestHash: proposal.proposalManifestHash,
+          submittedAt: proposal.submittedAt,
+          ethereumTxHash: proposal.ethereumTxHash,
+        })),
+      proposalSectionHashes: db.proposalEnvelopes
+        .filter((envelope) => proposalIds.has(envelope.proposalId))
+        .map((envelope) => ({
+          proposalId: envelope.proposalId,
+          sectionType: envelope.sectionType,
+          encryptedHash: envelope.encryptedHash,
+          locked: envelope.locked,
+        })),
+      evaluationSignatures: db.evaluationSignatures
+        .filter((signature) => signature.tenderId === tender.id)
+        .map((signature) => ({
+          id: signature.id,
+          proposalId: signature.proposalId,
+          evaluatorHash: signature.evaluatorHash,
+          commentHash: signature.commentHash,
+          recommendationHash: hashCanonical(signature.recommendation),
+          signatureHash: signature.signatureHash,
+          ethereumTxHash: signature.ethereumTxHash,
+          signedAt: signature.signedAt,
+        })),
+      boardVotes: db.boardVotes
+        .filter((vote) => vote.tenderId === tender.id)
+        .map((vote) => ({
+          id: vote.id,
+          proposalId: vote.proposalId,
+          boardMemberHash: vote.boardMemberHash,
+          voteHash: vote.voteHash,
+          ethereumTxHash: vote.ethereumTxHash,
+          votedAt: vote.votedAt,
+        })),
+      award:
+        db.awards
+          .filter((award) => award.tenderId === tender.id)
+          .map((award) => ({
+            id: award.id,
+            tenderId: award.tenderId,
+            winningProposalId: award.winningProposalId,
+            awardDecisionHash: award.awardDecisionHash,
+            finalVoteSummaryHash: award.finalVoteSummaryHash,
+            ethereumTxHash: award.ethereumTxHash,
+            declaredAt: award.declaredAt,
+          }))[0] ?? null,
+      auditEvents: db.auditEvents
+        .filter((event) => event.tenderId === tender.id)
+        .sort(
+          (left, right) =>
+            new Date(left.createdAt).getTime() -
+            new Date(right.createdAt).getTime(),
+        )
+        .map((event) => ({
+          id: event.id,
+          tenderId: event.tenderId,
+          eventType: event.eventType,
+          actorHash: event.actorHash,
+          payloadHash: event.payloadHash,
+          ethereumTxHash: event.ethereumTxHash,
+          createdAt: event.createdAt,
+        })),
+    };
+
+    assertPublicAuditResponseSafe(publicBody);
 
     return {
       status: 200,
-      body: {
-        ok: true,
-        tender: {
-          id: tender.id,
-          title: tender.title,
-          deadline: tender.deadline,
-          status: tender.status,
-          tenderHash: tender.tenderHash,
-          ethereumTxHash: tender.ethereumTxHash,
-          createdAt: tender.createdAt,
-          updatedAt: tender.updatedAt,
-        },
-        proposals: db.proposals
-          .filter((proposal) => proposal.tenderId === tender.id)
-          .map((proposal) => ({
-            id: proposal.id,
-            tenderId: proposal.tenderId,
-            vendorHash: proposal.vendorHash,
-            proposalManifestHash: proposal.proposalManifestHash,
-            submittedAt: proposal.submittedAt,
-            ethereumTxHash: proposal.ethereumTxHash,
-          })),
-        proposalSectionHashes: db.proposalEnvelopes
-          .filter((envelope) => proposalIds.has(envelope.proposalId))
-          .map((envelope) => ({
-            proposalId: envelope.proposalId,
-            sectionType: envelope.sectionType,
-            encryptedHash: envelope.encryptedHash,
-            locked: envelope.locked,
-          })),
-        evaluationSignatures: db.evaluationSignatures
-          .filter((signature) => signature.tenderId === tender.id)
-          .map((signature) => ({
-            id: signature.id,
-            proposalId: signature.proposalId,
-            evaluatorHash: signature.evaluatorHash,
-            commentHash: signature.commentHash,
-            recommendation: signature.recommendation,
-            signatureHash: signature.signatureHash,
-            ethereumTxHash: signature.ethereumTxHash,
-            signedAt: signature.signedAt,
-          })),
-        boardVotes: db.boardVotes
-          .filter((vote) => vote.tenderId === tender.id)
-          .map((vote) => ({
-            id: vote.id,
-            proposalId: vote.proposalId,
-            boardMemberHash: vote.boardMemberHash,
-            voteHash: vote.voteHash,
-            ethereumTxHash: vote.ethereumTxHash,
-            votedAt: vote.votedAt,
-          })),
-        award: db.awards.find((award) => award.tenderId === tender.id) ?? null,
-        auditEvents: db.auditEvents
-          .filter((event) => event.tenderId === tender.id)
-          .sort(
-            (left, right) =>
-              new Date(left.createdAt).getTime() -
-              new Date(right.createdAt).getTime(),
-          ),
-      },
+      body: publicBody,
     };
   } catch (error) {
     return toErrorResponse(error);
@@ -1016,6 +1058,43 @@ function assertNoPlaintextFields(value: unknown): void {
     }
     assertNoPlaintextFields(nested);
   }
+}
+
+function assertPublicAuditResponseSafe(value: unknown): void {
+  const blockedKeys = new Set([
+    "plaintext",
+    "plainText",
+    "proposalContent",
+    "decryptedContent",
+    "rawContent",
+    "fileContent",
+    "encryptedBlobRef",
+    "keyRef",
+    "iv",
+  ]);
+
+  const visit = (node: unknown, path: string): void => {
+    if (!node || typeof node !== "object") return;
+
+    if (Array.isArray(node)) {
+      node.forEach((nested, index) => visit(nested, `${path}[${index}]`));
+      return;
+    }
+
+    for (const [key, nested] of Object.entries(node)) {
+      if (blockedKeys.has(key)) {
+        throw new ApiError(
+          500,
+          "PUBLIC_AUDIT_REDACTION_FAILED",
+          "Public audit response attempted to expose confidential proposal data.",
+          { field: key, path },
+        );
+      }
+      visit(nested, path ? `${path}.${key}` : key);
+    }
+  };
+
+  visit(value, "publicAudit");
 }
 
 function isProposalSectionType(value: unknown): value is ProposalSectionType {

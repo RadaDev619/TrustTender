@@ -22,6 +22,10 @@ import type {
   Tender,
 } from "@/services/demoData";
 import {
+  getAnonymousProposalLabel,
+  getAwardDisplayName,
+} from "@/services/proposalAnonymity";
+import {
   castBoardVote,
   getBoardVoteProgress,
   getCombinedBoardVotes,
@@ -359,9 +363,16 @@ export function BoardVotingWorkflowPanel({
             </p>
             {winnerProposal ? (
               <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-emerald-900">
-                <p className="font-semibold">Majority winner</p>
+                <p className="font-semibold">
+                  {awardDeclared ? "Declared winner" : "Majority proposal"}
+                </p>
                 <p className="mt-1">
-                  {winnerProposal.vendorName} ({winnerProposal.id})
+                  {getAwardDisplayName({
+                    proposal: winnerProposal,
+                    proposals,
+                    winningProposalId: winnerProposal.id,
+                    awardDeclared,
+                  })}
                 </p>
               </div>
             ) : progress.tie ? (
@@ -439,7 +450,7 @@ export function BoardVotingWorkflowPanel({
                     <div className="flex flex-wrap items-center gap-2">
                       <FileText className="h-5 w-5 text-gov-blue" aria-hidden />
                       <h3 className="font-semibold text-gov-ink">
-                        {proposal.vendorName}
+                        {getAnonymousProposalLabel(proposal, proposals)}
                       </h3>
                       <StatusBadge status={proposal.status} />
                     </div>
@@ -543,7 +554,7 @@ export function BoardVotingWorkflowPanel({
                 <tr>
                   <th className="py-2 pr-4 font-semibold">Rank</th>
                   <th className="py-2 pr-4 font-semibold">Proposal</th>
-                  <th className="py-2 pr-4 font-semibold">Vendor</th>
+                  <th className="py-2 pr-4 font-semibold">Proposal alias</th>
                   <th className="py-2 pr-4 font-semibold">Eligibility</th>
                   <th className="py-2 pr-4 font-semibold">Technical</th>
                   <th className="py-2 pr-4 font-semibold">Financial</th>
@@ -636,6 +647,7 @@ export function BoardVotingWorkflowPanel({
         totalEligibleVotes={progress.requiredVotes}
         winnerProposalId={progress.winnerProposalId}
         tie={progress.tie}
+        revealWinnerVendor={awardDeclared}
       />
     </div>
   );

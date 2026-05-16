@@ -34,6 +34,10 @@ interface StatusBadgeProps {
     | "Evaluated"
     | "Awarded"
     | "Restricted"
+    | "Content redacted"
+    | "Public hashes only"
+    | "Identity hashed"
+    | "Read-only audit"
     | "SUCCESS"
     | "BLOCKED"
     | "PROOF_RECORDED";
@@ -82,6 +86,10 @@ const toneByStatus: Record<string, BadgeTone> = {
   Evaluated: "green",
   Awarded: "green",
   Restricted: "gray",
+  "Content redacted": "green",
+  "Public hashes only": "blue",
+  "Identity hashed": "green",
+  "Read-only audit": "gray",
   SUCCESS: "green",
   BLOCKED: "red",
   PROOF_RECORDED: "green",

@@ -4,6 +4,7 @@ import {
   type MockNdiUser,
 } from "@shared/mockBhutanNdiRbac";
 import type { Proposal, Tender } from "@/services/demoData";
+import { getProposalAlias } from "@/services/proposalAnonymity";
 import {
   recordEvaluationSignatureProof,
   type EvaluationSignatureRelayerReceipt,
@@ -338,7 +339,7 @@ export function getEvaluationRanking({
       return {
         rank: 0,
         proposalId: entry.proposal.id,
-        vendorName: entry.proposal.vendorName,
+        vendorName: getProposalAlias(entry.proposal, proposals),
         totalScore,
         averageScore: roundScore(totalScore / EvaluationScoreSections.length),
         combinedMaxScore: EvaluationScoreSections.length * 10,
@@ -384,7 +385,7 @@ export function getEvaluationSectionRankingGroups({
           section,
           label: formatEvaluationScoreSection(section),
           proposalId: entry.proposal.id,
-          vendorName: entry.proposal.vendorName,
+          vendorName: getProposalAlias(entry.proposal, proposals),
           score: sectionScore.score,
           rawTotalScore: sectionScore.rawTotalScore,
           maxScore: sectionScore.maxScore,
@@ -552,7 +553,7 @@ function normalizeProposalScores(
     }
     return {
       proposalId: proposal.id,
-      vendorName: proposal.vendorName,
+      vendorName: getProposalAlias(proposal, proposals),
       section: evaluatorSpecialty,
       score: roundScore(score.score),
     };
@@ -577,7 +578,7 @@ function getSignedProposalScores(
     ? [
         {
           proposalId: proposal.id,
-          vendorName: proposal.vendorName,
+          vendorName: getProposalAlias(proposal, proposals),
           section,
           score: 10,
         },

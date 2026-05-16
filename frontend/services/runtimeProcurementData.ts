@@ -126,6 +126,7 @@ function manifestToProposal(
     tenderId: manifest.tenderId,
     id: manifest.proposalId,
     vendorName: vendor?.company ?? vendor?.employer ?? vendor?.name ?? "Vendor",
+    vendorHash: manifest.vendorIdentityHash,
     submittedAt: manifest.createdAt,
     fileHash: manifest.proposalManifestHash,
     encryptedFileRef: `encrypted://local/${manifest.tenderId}/${manifest.proposalId}`,

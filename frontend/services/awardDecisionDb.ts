@@ -9,6 +9,7 @@ import type {
   Proposal,
   Tender,
 } from "@/services/demoData";
+import { getProposalAlias } from "@/services/proposalAnonymity";
 import {
   getBoardVoteProgress,
   getCombinedBoardVotes,
@@ -461,7 +462,7 @@ function buildVoteSummary({
       );
       return {
         proposalId: proposal.id,
-        vendorName: proposal.vendorName,
+        vendorName: getProposalAlias(proposal, proposals),
         voteCount: proposalVotes.length,
         voteHashes: proposalVotes
           .map((vote) => vote.voteHash)

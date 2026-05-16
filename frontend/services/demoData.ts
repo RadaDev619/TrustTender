@@ -61,6 +61,7 @@ export interface Proposal {
   tenderId: string;
   id: string;
   vendorName: string;
+  vendorHash?: string;
   submittedAt: string;
   fileHash: string;
   encryptedFileRef: string;
