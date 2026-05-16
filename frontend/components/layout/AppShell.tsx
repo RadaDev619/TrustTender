@@ -176,9 +176,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       >
         <div className="flex h-16 items-center justify-between border-b border-slate-200 px-5">
           <Link href="/dashboard" className="min-w-0">
-            <p className="text-sm font-semibold text-gov-green">eGP Trust Layer</p>
+            <p className="text-sm font-semibold text-gov-green">TenderTrust</p>
             <p className="truncate text-xs text-slate-500">
-              Procurement Audit Middleware
+              Bhutan procurement trust platform
             </p>
           </Link>
           <button

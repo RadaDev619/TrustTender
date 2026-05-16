@@ -3,7 +3,7 @@ import "./globals.css";
 import { AppShell } from "@/components/layout/AppShell";
 
 export const metadata: Metadata = {
-  title: "eGP Trust Layer",
+  title: "TenderTrust",
   description: "Bhutan procurement trust and audit dashboard",
 };
 

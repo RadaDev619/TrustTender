@@ -11,10 +11,10 @@ export default function LoginPage() {
             <ShieldCheck className="h-6 w-6" aria-hidden />
           </div>
           <p className="mt-6 text-sm font-semibold text-gov-green">
-            Procurement Audit Middleware
+            Bhutan procurement trust platform
           </p>
           <h1 className="mt-2 text-3xl font-semibold text-gov-ink md:text-4xl">
-            eGP Trust Layer
+            TenderTrust
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
             Login with Bhutan NDI to verify employment identity, map a
