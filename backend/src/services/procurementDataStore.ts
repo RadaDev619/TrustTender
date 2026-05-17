@@ -1,4 +1,5 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import {
   MockNdiUsers,
@@ -101,6 +102,10 @@ function toUserModel(user: (typeof MockNdiUsers)[number]): User {
 }
 
 function getDefaultDbPath(): string {
+  if (process.env.VERCEL) {
+    return path.join(os.tmpdir(), "tendertrust", "procurement-db.json");
+  }
+
   const cwd = process.cwd();
   const workspaceRoot =
     path.basename(cwd).toLowerCase() === "frontend"

@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { CalendarDays, FilePlus2, ShieldCheck } from "lucide-react";
-import { Role } from "@shared/mockBhutanNdiRbac";
+import { Permission, Role } from "@shared/mockBhutanNdiRbac";
 import type { Tender, TenderState } from "@/services/demoData";
 import { useMockNdiSession } from "@/hooks/useMockNdiSession";
 import { MessageBanner } from "@/components/ui/MessageBanner";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { TxHashLink } from "@/components/ui/TxHashLink";
+import { hashCanonicalJson } from "@/services/browserHash";
+import { postAuditRelayer } from "@/services/auditRelayerClient";
 import {
   type CreatedTenderRecord,
   upsertCreatedTenderRecord,
@@ -26,18 +28,6 @@ interface ProcurementApiTender {
   boardMemberIds: string[];
   createdAt: string;
   updatedAt: string;
-}
-
-interface ProcurementApiReceipt {
-  txHash?: string;
-}
-
-interface ProcurementApiBody {
-  ok?: boolean;
-  message?: string;
-  code?: string;
-  tender?: ProcurementApiTender;
-  receipt?: ProcurementApiReceipt;
 }
 
 export function DemoTenderCreateForm() {
@@ -89,27 +79,47 @@ export function DemoTenderCreateForm() {
     setSuccess(null);
 
     try {
-      const body = await postJson<ProcurementApiBody>("/api/tenders", {
-        mockNdiSession: session,
-        id: tenderId.trim(),
-        title: title.trim(),
-        description: description.trim(),
-        deadline: new Date(deadline).toISOString(),
+      const timestamp = new Date().toISOString();
+      const nextTenderId = tenderId.trim();
+      const nextDeadline = new Date(deadline).toISOString();
+      const nextTitle = title.trim();
+      const nextDescription = description.trim();
+      const tenderHash = await hashCanonicalJson({
+        tenderId: nextTenderId,
+        title: nextTitle,
+        description: nextDescription,
+        deadline: nextDeadline,
+        createdBy: session.userId,
+        createdAt: timestamp,
       });
-
-      if (!body.tender) {
-        throw new Error("Tender was created but the response did not include it.");
-      }
+      const receipt = await postAuditRelayer("tender-created", {
+        tenderId: nextTenderId,
+        tenderHash,
+        actorHash: session.identityHash,
+      });
+      const tender: ProcurementApiTender = {
+        id: nextTenderId,
+        title: nextTitle,
+        description: nextDescription,
+        deadline: nextDeadline,
+        status: "DRAFT",
+        tenderHash,
+        ethereumTxHash: receipt.txHash,
+        evaluatorIds: [],
+        boardMemberIds: [],
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      };
 
       const nextRecord: CreatedTenderRecord = {
         tender: toDemoTender({
-          apiTender: body.tender,
+          apiTender: tender,
           agency,
           budget,
           lastAction: "Draft tender created",
         }),
-        createTxHash: body.receipt?.txHash,
-        createdAt: new Date().toISOString(),
+        createTxHash: receipt.txHash,
+        createdAt: timestamp,
       };
 
       upsertCreatedTenderRecord(nextRecord);
@@ -130,27 +140,45 @@ export function DemoTenderCreateForm() {
     setSuccess(null);
 
     try {
-      const body = await postJson<ProcurementApiBody>(
-        `/api/tenders/${record.tender.id}/publish`,
-        {
-          mockNdiSession: session,
-        },
-      );
-
-      if (!body.tender) {
-        throw new Error("Tender was published but the response did not include it.");
-      }
+      const timestamp = new Date().toISOString();
+      const stageHash = await hashCanonicalJson({
+        tenderId: record.tender.id,
+        eventType: "TENDER_PUBLISHED",
+        actorHash: session.identityHash,
+        fromStatus: "DRAFT",
+        toStatus: "OPEN",
+        timestamp,
+      });
+      const receipt = await postAuditRelayer("stage-changed", {
+        tenderId: record.tender.id,
+        stageHash,
+        actorHash: session.identityHash,
+        requiredPermission: Permission.PUBLISH_TENDER,
+      });
+      const tender: ProcurementApiTender = {
+        id: record.tender.id,
+        title: record.tender.title,
+        description: record.tender.lastAction,
+        deadline: record.tender.deadline,
+        status: "OPEN",
+        tenderHash: record.tender.documentHash,
+        ethereumTxHash: receipt.txHash,
+        evaluatorIds: record.tender.evaluatorIds ?? [],
+        boardMemberIds: record.tender.boardMemberIds ?? [],
+        createdAt: record.createdAt,
+        updatedAt: timestamp,
+      };
 
       const nextRecord: CreatedTenderRecord = {
         ...record,
         tender: toDemoTender({
-          apiTender: body.tender,
+          apiTender: tender,
           agency: record.tender.agency,
           budget: record.tender.budget,
           lastAction: "Tender published for vendor proposals",
         }),
-        publishTxHash: body.receipt?.txHash,
-        publishedAt: new Date().toISOString(),
+        publishTxHash: receipt.txHash,
+        publishedAt: timestamp,
       };
 
       upsertCreatedTenderRecord(nextRecord);
@@ -394,23 +422,6 @@ export function DemoTenderCreateForm() {
       </aside>
     </div>
   );
-}
-
-async function postJson<T>(url: string, payload: unknown): Promise<T> {
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
-  const body = await response.json().catch(() => null);
-
-  if (!response.ok) {
-    throw new Error(body?.message ?? "The request could not be completed.");
-  }
-
-  return body as T;
 }
 
 function toDemoTender({

@@ -4,10 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import { LockKeyhole, ShieldCheck, UsersRound } from "lucide-react";
 import {
   MockNdiUsers,
+  Permission,
   Role,
   type MockNdiUser,
 } from "@shared/mockBhutanNdiRbac";
-import type { AuditEvent, Tender, TenderState } from "@/services/demoData";
+import type { AuditEvent, Tender } from "@/services/demoData";
 import { getDeadlineLockView } from "@/services/deadlineLock";
 import {
   assignTenderReviewTeamWithRuntimeAudit,
@@ -22,6 +23,8 @@ import {
   upsertCreatedTenderRecord,
 } from "@/services/createdTenderDb";
 import { formatEvaluatorScope } from "@/services/simulatedKms";
+import { postAuditRelayer } from "@/services/auditRelayerClient";
+import { hashCanonicalJson } from "@/services/browserHash";
 import { formatDateTime, shortHash } from "@/lib/format";
 import { MessageBanner } from "@/components/ui/MessageBanner";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -164,36 +167,26 @@ export function TenderOfficerDeadlineActions({
     setError(null);
 
     try {
-      const response = await fetch(`/api/tenders/${runtimeTender.id}/publish`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ mockNdiSession: session }),
+      const timestamp = new Date().toISOString();
+      const stageHash = await hashCanonicalJson({
+        tenderId: runtimeTender.id,
+        eventType: "TENDER_PUBLISHED",
+        actorHash: session.identityHash,
+        fromStatus: "DRAFT",
+        toStatus: "OPEN",
+        timestamp,
       });
-      const body = await response.json().catch(() => null);
-      if (!response.ok) {
-        throw new Error(body?.message ?? "Tender could not be published.");
-      }
-
-      const apiTender = body?.tender as
-        | {
-            status: TenderState;
-            tenderHash: string;
-            updatedAt: string;
-            deadline: string;
-          }
-        | undefined;
-      if (!apiTender) {
-        throw new Error("Tender was published but the response was incomplete.");
-      }
+      const receipt = await postAuditRelayer("stage-changed", {
+        tenderId: runtimeTender.id,
+        stageHash,
+        actorHash: session.identityHash,
+        requiredPermission: Permission.PUBLISH_TENDER,
+      });
 
       const nextTender: Tender = {
         ...runtimeTender,
-        state: apiTender.status,
-        deadline: apiTender.deadline,
-        documentHash: apiTender.tenderHash,
-        updatedAt: apiTender.updatedAt,
+        state: "OPEN",
+        updatedAt: timestamp,
         lastAction: "Tender published for vendor proposals",
         proofStatus: "Secure Proof Recorded",
       };
@@ -203,9 +196,9 @@ export function TenderOfficerDeadlineActions({
       upsertCreatedTenderRecord({
         tender: nextTender,
         createTxHash: existingRecord?.createTxHash,
-        publishTxHash: body?.receipt?.txHash,
+        publishTxHash: receipt.txHash,
         createdAt: existingRecord?.createdAt ?? new Date().toISOString(),
-        publishedAt: new Date().toISOString(),
+        publishedAt: timestamp,
       });
       setRuntimeTender(nextTender);
       setMessageTitle("Secure proof recorded");

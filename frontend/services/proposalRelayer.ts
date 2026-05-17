@@ -54,11 +54,22 @@ export async function submitEncryptedProposal(
   try {
     return await submitProposalToProcurementApi(manifest);
   } catch (error) {
-    if (error instanceof Error && error.message.includes("Tender was not found")) {
+    if (shouldRecordProofWithoutProcurementStore(error)) {
       return recordProposalSubmissionProof(manifest);
     }
     throw error;
   }
+}
+
+function shouldRecordProofWithoutProcurementStore(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  return [
+    "Tender was not found",
+    "procurement request could not be processed",
+    "Check server logs",
+  ].some((message) =>
+    error.message.toLowerCase().includes(message.toLowerCase()),
+  );
 }
 
 async function submitProposalToProcurementApi(

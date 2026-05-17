@@ -1,4 +1,5 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import os from "node:os";
 import path from "node:path";
 
 export type AuditTransactionAction =
@@ -33,9 +34,13 @@ const AUDIT_TRANSACTION_DB_PATH =
 export function appendAuditTransaction(
   record: StoredAuditTransaction,
 ): StoredAuditTransaction {
-  const records = readAuditTransactions();
-  records.push(record);
-  writeAuditTransactions(records);
+  try {
+    const records = readAuditTransactions();
+    records.push(record);
+    writeAuditTransactions(records);
+  } catch (error) {
+    console.error("Audit transaction storage failed", error);
+  }
   return record;
 }
 
@@ -59,6 +64,10 @@ function writeAuditTransactions(records: StoredAuditTransaction[]): void {
 }
 
 function getDefaultDbPath(): string {
+  if (process.env.VERCEL) {
+    return path.join(os.tmpdir(), "tendertrust", "audit-transactions.json");
+  }
+
   const cwd = process.cwd();
   const workspaceRoot =
     path.basename(cwd).toLowerCase() === "frontend"
