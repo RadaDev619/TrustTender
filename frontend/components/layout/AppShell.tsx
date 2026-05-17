@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -174,12 +175,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex h-16 items-center justify-between border-b border-slate-200 px-5">
-          <Link href="/dashboard" className="min-w-0">
-            <p className="text-sm font-semibold text-gov-green">TenderTrust</p>
-            <p className="truncate text-xs text-slate-500">
-              Bhutan procurement trust platform
-            </p>
+        <div className="flex h-20 items-center justify-between border-b border-slate-200 px-5">
+          <Link
+            href="/dashboard"
+            className="flex min-w-0 items-center"
+            aria-label="TenderTrust dashboard"
+          >
+            <Image
+              src="/brand/tendertrust-logo.png"
+              alt="TenderTrust"
+              width={220}
+              height={54}
+              priority
+              className="h-auto w-52 max-w-full object-contain"
+            />
           </Link>
           <button
             type="button"
