@@ -6,6 +6,7 @@
     "build": "cd frontend && npm run build"
   },
   "dependencies": {
+    "ethers": "^6.16.0",
     "next": "^15.1.0"
   }
 }
