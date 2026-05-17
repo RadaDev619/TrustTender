@@ -4,3 +4,5 @@ tsconfig.tsbuildinfo
 .next-*.log
 test-results/
 .screenshots/
+
+.vercel
