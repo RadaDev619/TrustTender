@@ -1,3 +1,11 @@
+# vedio demo link:
+
+https://drive.google.com/drive/folders/1CBYenWi0ZStnqYbn6Jdu5y7szV6onTaA?usp=sharing
+
+# PPt link:
+
+https://canva.link/2961ov9nr8rti9p
+
 # eGP Trust Layer
 
 Gasless blockchain procurement audit and verification middleware for a Bhutan e-GP hackathon MVP.
@@ -25,27 +33,27 @@ The project implements a procurement trust layer with:
 
 ## Tech Stack
 
-| Layer | Technology |
-| --- | --- |
-| Frontend | Next.js App Router, React, Tailwind CSS, lucide-react |
-| Mock identity | Mock Bhutan NDI users in shared TypeScript |
-| Workflow | TypeScript procurement state machine |
-| Encryption | Browser Web Crypto API, AES-GCM, SHA-256 |
-| Backend APIs | Next.js route handlers calling backend TypeScript services |
-| Local data | JSON-backed demo stores and browser localStorage for MVP flows |
-| Blockchain relayer | ethers.js backend signer |
-| Smart contract | Solidity `^0.8.20`, Hardhat |
-| Tests | Node test runner with `tsx`, Hardhat tests |
+| Layer              | Technology                                                     |
+| ------------------ | -------------------------------------------------------------- |
+| Frontend           | Next.js App Router, React, Tailwind CSS, lucide-react          |
+| Mock identity      | Mock Bhutan NDI users in shared TypeScript                     |
+| Workflow           | TypeScript procurement state machine                           |
+| Encryption         | Browser Web Crypto API, AES-GCM, SHA-256                       |
+| Backend APIs       | Next.js route handlers calling backend TypeScript services     |
+| Local data         | JSON-backed demo stores and browser localStorage for MVP flows |
+| Blockchain relayer | ethers.js backend signer                                       |
+| Smart contract     | Solidity `^0.8.20`, Hardhat                                    |
+| Tests              | Node test runner with `tsx`, Hardhat tests                     |
 
 ## User Roles
 
-| Role | Demo user | Main permissions |
-| --- | --- | --- |
-| `PROCUREMENT_OFFICER` | Karma Dorji | Create, publish, close, start evaluation, forward to board, declare award |
-| `VENDOR` | Tashi Construction, Druk Builders | Submit encrypted proposals while tender is open |
-| `EVALUATOR` | Evaluator 1 to 4 | View decrypted proposals during evaluation and sign once |
-| `BOARD_MEMBER` | Board Member 1 to 3 | Vote once during board voting |
-| `AUDITOR` | Auditor | View public audit proofs without proposal content |
+| Role                  | Demo user                         | Main permissions                                                          |
+| --------------------- | --------------------------------- | ------------------------------------------------------------------------- |
+| `PROCUREMENT_OFFICER` | Karma Dorji                       | Create, publish, close, start evaluation, forward to board, declare award |
+| `VENDOR`              | Tashi Construction, Druk Builders | Submit encrypted proposals while tender is open                           |
+| `EVALUATOR`           | Evaluator 1 to 4                  | View decrypted proposals during evaluation and sign once                  |
+| `BOARD_MEMBER`        | Board Member 1 to 3               | Vote once during board voting                                             |
+| `AUDITOR`             | Auditor                           | View public audit proofs without proposal content                         |
 
 ## MVP Workflow
 

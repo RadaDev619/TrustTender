@@ -104,9 +104,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeWorkflow, setActiveWorkflow] = useState<string | null>(null);
-  const [createdWorkflowTenders, setCreatedWorkflowTenders] = useState<Tender[]>(
-    [],
-  );
+  const [createdWorkflowTenders, setCreatedWorkflowTenders] = useState<
+    Tender[]
+  >([]);
   const { currentUser } = useMockNdiSession();
   const isLogin = pathname === "/login";
 
@@ -126,7 +126,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const refresh = () => {
       setCreatedWorkflowTenders(
-        listCreatedTenderRecords().map((record) => getRuntimeTender(record.tender)),
+        listCreatedTenderRecords().map((record) =>
+          getRuntimeTender(record.tender),
+        ),
       );
     };
     refresh();
@@ -202,11 +204,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         <nav className="grid gap-1 p-3" aria-label="Main navigation">
           {visibleNavItems.map((item) => {
-            const active = isNavItemActive(
-              item,
-              pathname,
-              activeWorkflow,
-            );
+            const active = isNavItemActive(item, pathname, activeWorkflow);
             const Icon = item.icon;
             return (
               <Link
@@ -354,9 +352,10 @@ function isNavItemActive(
   pathname: string,
   workflow: string | null,
 ): boolean {
-  const path = pathname.length > 1 && pathname.endsWith("/")
-    ? pathname.slice(0, -1)
-    : pathname;
+  const path =
+    pathname.length > 1 && pathname.endsWith("/")
+      ? pathname.slice(0, -1)
+      : pathname;
   const itemPath = item.href.split("?")[0];
 
   if (item.label === "Dashboard") {
@@ -369,8 +368,7 @@ function isNavItemActive(
 
   if (item.label === "Manage Tender") {
     return (
-      (path === "/tenders" && workflow !== "award") ||
-      isTenderDetailPath(path)
+      (path === "/tenders" && workflow !== "award") || isTenderDetailPath(path)
     );
   }
 
@@ -397,7 +395,9 @@ function isNavItemActive(
     return path === "/audit" || path.startsWith("/audit/");
   }
 
-  return path === itemPath || (itemPath !== "/" && path.startsWith(`${itemPath}/`));
+  return (
+    path === itemPath || (itemPath !== "/" && path.startsWith(`${itemPath}/`))
+  );
 }
 
 function isTenderDetailPath(path: string): boolean {
